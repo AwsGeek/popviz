@@ -27,7 +27,11 @@ aws cloudformation package --template-file popviz.yaml --s3-bucket <S3 bucket to
 ### 2. Create the AWS resources.
 Build the AWS resources, including an S3 bucket to host a simple static website, a Lambda function to generate the data file, and the IAM role and policy with permissions to upload to the created S3 bucket. 
 ```
-aws --region <Specify Region> cloudformation deploy --template-file package.popviz.yaml --stack-name <Your Stack Name> --parameter-overrides PopVizBucketName=<S3 Bucket Name> GoogleAPIKey=<Your Google API Key> --capabilities CAPABILITY_IAM 
+aws --region <Specify Region> cloudformation deploy \
+  --template-file package.popviz.yaml \
+  --stack-name <Your Stack Name> \
+  --parameter-overrides PopVizBucketName=<S3 Bucket Name> GoogleAPIKey=<Your Google API Key> \
+  --capabilities CAPABILITY_IAM 
 ```
 
 ### 3. Copy the web page and data files to the S3 bucket.
@@ -41,7 +45,7 @@ aws s3 cp cloudfront.json s3://<S3 Bucket Name>/cloudfront.json --acl public-rea
 You can view the results immediately by browsing to public URL associated with the created S3 bucket. The Lambda script will execute and update the cloudgformation.json data file daily
 
 ### 5. Tear everything down (optional)
-This build AWS resources that cost money. If you want to tear everything down, delete the files in the created S3 bucket, then run this:
+This builds AWS resources that cost money. If you want to tear everything down, delete the files in the created S3 bucket, then run this:
 ```
 aws cloudformation delete-stack --stack-name <Your Stack Name>
 ```
