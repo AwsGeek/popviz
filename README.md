@@ -21,7 +21,9 @@ To build this yourself:
 ### 1. Build the Lambda package 
 This command zips up the Lambda function, uploads it to the specified S3 bucket and outputs another Cloudformation template that references that bucket directly. 
 ```
-aws cloudformation package --template-file popviz.yaml --s3-bucket <S3 bucket to upload Lambda package> --output-template-file package.popviz.yaml
+aws cloudformation package --template-file popviz.yaml \
+  --s3-bucket <S3 bucket to upload Lambda package> \
+  --output-template-file package.popviz.yaml
 ```
 
 ### 2. Create the AWS resources.
