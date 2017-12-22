@@ -1,0 +1,85 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: Cloudfront edge location visualization
+
+Parameters:
+  GoogleAPIKey:
+    Type: String
+    Description: API key for geolocation
+  PopVizBucketName:
+    Type: String
+    Default: cloudfront.json
+    Description: S3 key to use for geojson file
+  PopVizObjectKey:
+    Type: String
+    Default: cloudfront.json
+    Description: S3 key to use for geojson file
+
+Resources:
+
+  PopVizBucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: !Ref PopVizBucketName
+      AccessControl: PublicRead
+      WebsiteConfiguration:
+        IndexDocument: popviz.html
+
+  PopVizFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: popviz.lambda_handler
+      Runtime: python3.6
+      CodeUri: ./lambda
+      Timeout: 120
+      Role: !GetAtt [PopVizRole, Arn]
+      Environment:
+        Variables:
+          s3Bucket: !Ref PopVizBucket
+          s3Key: !Ref PopVizObjectKey
+          geoKey: !Ref GoogleAPIKey
+
+      Events:
+        Timer:
+          Type: Schedule
+          Properties:
+            Schedule: rate(1 day)
+
+  PopVizPolicy:
+    Type: AWS::IAM::Policy
+    Properties:
+      PolicyName: PopVizPolicy
+      Roles:
+        - !Ref PopVizRole
+      PolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          -
+            Effect: Allow
+            Action:
+                - logs:CreateLogGroup
+                - logs:CreateLogStream
+                - logs:PutLogEvents
+            Resource: arn:aws:logs:*:*:*
+          -
+            Effect: Allow
+            Action: 
+                - s3:PutObject
+                - s3:PutObjectAcl
+            Resource: !Join ["", [!GetAtt [PopVizBucket, Arn], "/", !Ref PopVizObjectKey]]
+
+  PopVizRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          -
+            Effect: Allow
+            Principal:
+              Service:
+                - lambda.amazonaws.com
+            Action:
+              - sts:AssumeRole
+      Path: "/"
+

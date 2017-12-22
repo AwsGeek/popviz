@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html>
+<head>
+	
+	<title>Cloudformation Edge Locations</title>
+
+	<meta charset="utf-8" />
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	
+	<link rel="shortcut icon" type="image/x-icon" href="docs/images/favicon.ico" />
+
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.2.0/dist/leaflet.css" integrity="sha512-M2wvCLH6DSRazYeZRIm1JnYyh22purTM+FDB5CsyxtQJYeKq83arPe5wgbNmcFXGqiSH2XR8dT/fJISVA1r/zQ==" crossorigin=""/>
+    
+    <script src="//ajax.googleapis.com/ajax/libs/jquery/3.2.1/jquery.min.js"></script>
+    <script src="//unpkg.com/leaflet@1.2.0/dist/leaflet.js" integrity="sha512-lInM/apFSqyy1o6s89K4iQUKg6ppXEgsVxT35HbzUupEVRh2Eu9Wdl4tHj7dZO0s1uvplcYGmt3498TtHq+log==" crossorigin=""></script>
+    
+    <style>
+    html,
+    body {
+        height: 100%;
+        width: 100%;
+    }
+    body {
+        margin: 0;
+    }
+    #map {
+        width: 100%;
+        height: 100%;
+    }
+    .leaflet-container {
+        background-color: #fff;
+    }    
+    h4 {
+        margin: 0 0 10px;
+        color: #000;
+    }
+    td {
+        padding-bottom: 20px;
+        vertical-align: middle;    
+    }
+    .label {
+        font-size: 15px;
+        font-weight:bold;
+        padding-left: 15px;
+    }
+    
+    #legend {
+        position: fixed;
+        bottom: 20px;
+        left: 40px;   
+        z-index: 1000;
+    }    
+    .edge {
+        margin: 0 auto;
+        width: 18px;
+        height: 18px;
+        opacity: 1.0;
+        border-radius: 50%;
+        background: #5BA2D8;
+    }
+    .multi {
+        margin: 0 auto;
+        width: 18px;
+        height: 18px;
+        opacity: 1.0;
+        border-radius: 50%;
+        background: #A166FF;
+    }
+    .cache {
+        margin: 0 auto;
+        width: 36px;
+        height: 36px;
+        opacity: 1.0;
+        border-color: #F9AE33;
+        border-width: 4px;
+        border-radius: 50%;
+        border-style: solid;
+        background: #FFE8CE;
+    }
+    </style>
+
+	
+</head>
+<body>
+<div id="map">
+<div id="legend">
+<table>
+<tr>
+<td><div class="edge"/></td>
+<td><span class="label">Edge Locations</span></td>
+</tr>
+<tr>
+<td><div class="multi"/></td>
+<td><span class="label">Multiple Edge Locations</span></td>
+</tr>
+<tr>
+<td><div class="cache"/></td>
+<td><span class="label">Regional Edge Caches</span></td>
+</tr>
+</div>
+
+</div>
+
+<script>
+    var tiles = L.tileLayer('https://cartodb-basemaps-{s}.global.ssl.fastly.net/dark_nolabels/{z}/{x}/{y}.png', {
+        attribution: '&copy; <a href="http://www.openstreetmap.org/copyright">OpenStreetMap</a> &copy; <a href="http://cartodb.com/attributions">CartoDB</a>'
+    });      
+
+    var bounds = [[-55,-170.0],[85,180.0]];
+    var map = L.map('map', {
+            minZoom: 2.5,
+            maxZoom: 2.5,
+            maxBounds: bounds, // Limit panning
+            maxBoundsViscosity: 1.0,
+            zoomControl: false
+        });
+    map.fitBounds(bounds);
+
+    $.getJSON('world.json', function (geojson) { // load file
+        L.geoJson(geojson, { // initialize layer with data
+            style: function (feature) { // Style option
+                return {
+                    'weight': 1,
+                    'color': '#DCDCDC',
+                    'fillColor': '#DCDCDC',
+                    'fillOpacity': 1,
+                    'opacity': 1
+                }
+            }
+        }).addTo(map); // Add layer to map
+        
+        $.getJSON( "cloudfront.json", {
+            t: Date.now()
+        })
+        .done(function( geojson ) {
+            L.geoJSON(geojson, {
+                pointToLayer: function (feature, latlng) {
+                    var options = {
+                        radius: 10,
+                        color: "white",
+                        weight: 4,
+                        opacity: 1,
+                        fillColor: "#5BA2D8",
+                        fillOpacity: 1
+                    };                                     
+                    tooltip = feature['properties']['name'];
+                    if (feature['properties']['count'] != "1") {
+                        options['fillColor'] = "#A166FF";
+                        tooltip += ' (' + feature['properties']['count'] + ')'
+                    }
+                    if (feature['properties']['type'] == "Regional Edge Cache") {
+                        options['radius'] = 25;
+                        options['color'] = "#F9AE33";
+                        options['fillColor'] = "#FFE8CE";
+                    }          
+                    var marker = L.circleMarker(latlng, options)
+                    marker.bindTooltip(tooltip).openTooltip();
+                    return marker;
+                }
+            }).addTo(map);
+        })                
+    });    
+               
+</script>
+</body>
+</html>
